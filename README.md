@@ -61,7 +61,90 @@ pip install -r requirements.txt
 
 - Python
 
+---
 
+## 주요 기능
+
+- 🔍 프로젝트 자동 분석 (언어, 프레임워크, 파일 구조)
+- 🔗 Git/GitHub 정보 자동 추출 (저장소 URL, 사용자명)
+- 🌐 한글/영어 템플릿 지원
+- 🎨 GitHub 뱃지 자동 생성
+- 💬 대화형 프로젝트 설명 입력
+- ⚙️ 커스터마이징 가능한 템플릿
+
+---
+
+## 설치
+
+### 방법 1: pip로 설치 (추천)
+
+```bash
+pip install git+https://github.com/hayoung-929/auto-readme-gen.git
+```
+
+### 방법 2: 소스에서 설치
+
+```bash
+git clone https://github.com/hayoung-929/auto-readme-gen.git
+cd auto-readme-gen
+pip install -e .
+```
+
+---
+
+## 사용법
+
+### 기본 사용
+
+```bash
+cd your-project
+readme-gen generate .
+```
+
+대화형으로 프로젝트 설명을 입력하면 README.md가 자동 생성됩니다.
+
+### 고급 옵션
+
+```bash
+readme-gen generate . --lang english
+readme-gen generate . --lang korean
+
+readme-gen generate . -d "내 프로젝트 설명"
+
+readme-gen generate . -o README_KR.md
+
+readme-gen generate . --no-interactive
+
+readme-gen analyze .
+```
+
+### 사용 예시
+
+```bash
+cd ~/projects/my-awesome-project
+
+readme-gen generate .
+
+프로젝트 설명을 입력하세요: Flask 기반 REST API 서버
+
+✓ 완료! 생성된 파일: ~/projects/my-awesome-project/README.md
+```
+
+---
+
+## 기여하기
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 라이선스
+
+MIT License - 자유롭게 사용하세요!
 
 
 ---
