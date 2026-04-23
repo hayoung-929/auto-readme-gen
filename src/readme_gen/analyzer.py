@@ -58,8 +58,17 @@ def analyze_project(project_path):
         dict: 프로젝트 정보 (이름, 언어, 파일 개수 등)
     """
     
+    # 절대 경로로 변환
     path = Path(project_path).resolve()
     
+    # 경로 존재 확인
+    if not path.exists():
+        raise ValueError(f"경로를 찾을 수 없습니다: {project_path}")
+    
+    if not path.is_dir():
+        raise ValueError(f"디렉토리가 아닙니다: {project_path}")
+    
+    # 기본 정보 딕셔너리
     project_info = {
         'name': path.name,
         'path': str(path.absolute()),
@@ -70,18 +79,23 @@ def analyze_project(project_path):
         'has_package_json': False,
     }
     
+    # 파일 확장자별 개수 세기
     extensions = Counter()
     
+    # 디렉토리 전체 탐색
     for root, dirs, files in os.walk(path):
+        # 불필요한 폴더 제외
         dirs[:] = [d for d in dirs if d not in ['.git', 'venv', 'node_modules', '__pycache__', '.vscode']]
         
         for file in files:
             project_info['file_count'] += 1
             ext = Path(file).suffix
             
+            # 확장자가 있으면 카운트
             if ext:
                 extensions[ext] += 1
             
+            # 특정 파일 체크
             if file == 'Dockerfile':
                 project_info['has_docker'] = True
             elif file == 'requirements.txt':
@@ -89,6 +103,7 @@ def analyze_project(project_path):
             elif file == 'package.json':
                 project_info['has_package_json'] = True
     
+    # 확장자로 언어 판별
     lang_map = {
         '.py': 'Python',
         '.js': 'JavaScript',
@@ -102,19 +117,32 @@ def analyze_project(project_path):
         '.php': 'PHP',
     }
     
+    # 가장 많이 쓰는 언어 3개 추출
     for ext, count in extensions.most_common(3):
         if ext in lang_map:
             project_info['languages'].append(lang_map[ext])
     
+    # 확장자 정보도 저장
     project_info['extensions'] = dict(extensions)
     
-    # Git 정보 추가 (여기!)
+    # Git 정보 추가
     git_info = get_git_info(project_path)
     project_info['git'] = git_info
+    
+    # 빈 프로젝트 체크
+    if project_info['file_count'] == 0:
+        project_info['is_empty'] = True
+    else:
+        project_info['is_empty'] = False
+    
+    # 언어를 하나도 못 찾았으면 기본값
+    if not project_info['languages']:
+        project_info['languages'] = ['Unknown']
     
     return project_info
 
 
+# 테스트용 코드
 if __name__ == '__main__':
     result = analyze_project('.')
     

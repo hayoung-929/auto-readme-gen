@@ -13,7 +13,7 @@ def cli():
 
 
 @cli.command()
-@click.argument('project_path', type=click.Path(exists=True), default='.')
+@click.argument('project_path', default='.')
 def analyze(project_path):
     """
     프로젝트 분석만 수행 (README 생성 안 함)
@@ -43,7 +43,7 @@ def analyze(project_path):
 
 
 @cli.command()
-@click.argument('project_path', type=click.Path(exists=True), default='.')
+@click.argument('project_path', default='.')
 @click.option('--output', '-o', default='README.md', help='출력 파일명 (기본: README.md)')
 @click.option('--lang', '-l', type=click.Choice(['korean', 'english']), default='korean', help='템플릿 언어 (기본: korean)')
 @click.option('--template', '-t', default=None, help='사용할 템플릿 파일 경로')
@@ -58,58 +58,85 @@ def generate(project_path, output, lang, template, description, no_interactive):
       readme-gen generate . -d "설명"          # 설명 직접 입력
       readme-gen generate . --no-interactive   # 기본값 사용
     """
-    click.echo(f"프로젝트 분석 중: {project_path}")
     
-    # 1. 프로젝트 분석
-    project_info = analyze_project(project_path)
-    click.echo(f"✓ 감지된 프로젝트: {project_info['name']}")
-    
-    # 주 언어 감지
-    main_lang = project_info['languages'][0] if project_info['languages'] else 'software'
-    
-    # 2. 프로젝트 설명 입력받기
-    if description is None and not no_interactive:
-        click.echo("\n" + "=" * 50)
-        click.echo("프로젝트 정보 입력")
-        click.echo("=" * 50)
+    try:
+        click.echo(f"프로젝트 분석 중: {project_path}")
         
-        # 기본 설명 제안
-        default_desc = f"A {main_lang} project"
-        if lang == 'korean':
-            default_desc = f"{main_lang} 기반 프로젝트"
+        # 1. 프로젝트 분석
+        project_info = analyze_project(project_path)
         
-        description = click.prompt(
-            '프로젝트 설명을 입력하세요 (엔터: 기본값 사용)',
-            default=default_desc,
-            show_default=True
-        )
+        # 빈 프로젝트 체크
+        if project_info.get('is_empty', False):
+            click.echo("⚠️  경고: 프로젝트 폴더가 비어있습니다.")
+            if not click.confirm('그래도 README를 생성하시겠습니까?'):
+                click.echo("취소되었습니다.")
+                return
         
-        click.echo(f"\n✓ 설명: {description}")
-    
-    elif description is None:
-        # --no-interactive 옵션이거나 -d로 설명 안 줬을 때
-        if lang == 'korean':
-            description = f"{main_lang} 기반 프로젝트"
-        else:
-            description = f"A {main_lang} project"
-    
-    # 프로젝트 정보에 설명 추가
-    project_info['description'] = description
-    
-    # 3. 템플릿 경로 설정
-    if template is None:
-        script_dir = Path(__file__).parent.parent.parent
-        template = script_dir / 'templates' / f'{lang}.md'
-    
-    # 4. 출력 경로 설정
-    project_root = Path(project_path).resolve()
-    output_path = project_root / output
-    
-    # 5. README 생성
-    click.echo(f"\nREADME 생성 중... (언어: {lang})")
-    generate_readme(project_info, str(template), str(output_path))
-    
-    click.echo(f"✓ 완료! 생성된 파일: {output_path}")
+        click.echo(f"✓ 감지된 프로젝트: {project_info['name']}")
+        
+        # 주 언어 감지
+        main_lang = project_info['languages'][0] if project_info['languages'] else 'software'
+        
+        # 2. 프로젝트 설명 입력받기
+        if description is None and not no_interactive:
+            click.echo("\n" + "=" * 50)
+            click.echo("프로젝트 정보 입력")
+            click.echo("=" * 50)
+            
+            # 기본 설명 제안
+            default_desc = f"A {main_lang} project"
+            if lang == 'korean':
+                default_desc = f"{main_lang} 기반 프로젝트"
+            
+            description = click.prompt(
+                '프로젝트 설명을 입력하세요 (엔터: 기본값 사용)',
+                default=default_desc,
+                show_default=True
+            )
+            
+            click.echo(f"\n✓ 설명: {description}")
+        
+        elif description is None:
+            # --no-interactive 옵션이거나 -d로 설명 안 줬을 때
+            if lang == 'korean':
+                description = f"{main_lang} 기반 프로젝트"
+            else:
+                description = f"A {main_lang} project"
+        
+        # 프로젝트 정보에 설명 추가
+        project_info['description'] = description
+        
+        # 3. 템플릿 경로 설정
+        if template is None:
+            script_dir = Path(__file__).parent.parent.parent
+            template = script_dir / 'templates' / f'{lang}.md'
+        
+        # 템플릿 파일 존재 확인
+        if not Path(template).exists():
+            click.echo(f"❌ 에러: 템플릿 파일을 찾을 수 없습니다: {template}")
+            click.echo(f"사용 가능한 템플릿: korean.md, english.md")
+            return
+        
+        # 4. 출력 경로 설정
+        project_root = Path(project_path).resolve()
+        output_path = project_root / output
+        
+        # 5. README 생성
+        click.echo(f"\nREADME 생성 중... (언어: {lang})")
+        generate_readme(project_info, str(template), str(output_path))
+        
+        click.echo(f"✓ 완료! 생성된 파일: {output_path}")
+        
+    except ValueError as e:
+        click.echo(f"❌ 에러: {e}")
+        return
+    except FileNotFoundError as e:
+        click.echo(f"❌ 파일을 찾을 수 없습니다: {e}")
+        return
+    except Exception as e:
+        click.echo(f"❌ 예상치 못한 에러가 발생했습니다: {e}")
+        click.echo("문제가 계속되면 GitHub Issues에 제보해주세요.")
+        return
 
 
 if __name__ == '__main__':
