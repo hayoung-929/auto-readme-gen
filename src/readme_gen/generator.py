@@ -9,6 +9,7 @@ def generate_readme(project_info, template_path='templates/default.md', output_p
     
     Args:
         project_info: analyzer.py에서 추출한 프로젝트 정보 (dict)
+                     AI가 생성한 내용도 포함 (ai_description, ai_features 등)
         template_path: 템플릿 파일 경로
         output_path: 생성될 README 파일 경로
     """
@@ -38,6 +39,20 @@ def generate_readme(project_info, template_path='templates/default.md', output_p
             'has_docker': project_info['has_docker'],
             'extensions': project_info['extensions'],
             'git': project_info.get('git', {'has_git': False}),
+            
+            # AI 생성 내용 (있으면 추가)
+            'ai_description': project_info.get('ai_description'),
+            'ai_features': project_info.get('ai_features', []),
+            'ai_installation': project_info.get('ai_installation', []),
+            'ai_run_command': project_info.get('ai_run_command'),
+            'ai_run_description': project_info.get('ai_run_description'),
+            'ai_usage_examples': project_info.get('ai_usage_examples', []),
+            
+            # 추가 분석 정보
+            'framework': project_info.get('framework'),
+            'packages': project_info.get('packages', []),
+            'entry_points': project_info.get('entry_points', []),
+            'package_json': project_info.get('package_json', {}),
         }
         
         # 템플릿에 데이터 채워넣기 (렌더링)
