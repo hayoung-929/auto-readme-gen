@@ -6,6 +6,25 @@ from pathlib import Path
 from collections import Counter
 import git
 
+# os.walk 시 하위 디렉터리 제외: 의존성·캐시·빌드 산출물
+# 'auto-readme-gen': 워크스페이스 상위 폴더를 분석할 때 옆에 둔 이 도구 클론이 본 프로젝트 통계에 섞이지 않도록
+SKIP_SUBDIRS = frozenset({
+    ".git",
+    "venv",
+    ".venv",
+    "node_modules",
+    "__pycache__",
+    ".vscode",
+    "dist",
+    "build",
+    ".eggs",
+    ".tox",
+    ".mypy_cache",
+    "htmlcov",
+    ".pytest_cache",
+    "auto-readme-gen",
+})
+
 
 def read_file_safely(file_path, max_lines=50):
     """
@@ -304,8 +323,7 @@ def analyze_project(project_path):
     
     # 디렉토리 전체 탐색
     for root, dirs, files in os.walk(path):
-        # 불필요한 폴더 제외
-        dirs[:] = [d for d in dirs if d not in ['.git', 'venv', 'node_modules', '__pycache__', '.vscode']]
+        dirs[:] = [d for d in dirs if d not in SKIP_SUBDIRS]
         
         for file in files:
             project_info['file_count'] += 1

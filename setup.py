@@ -13,6 +13,7 @@ setup(
         'GitPython>=3.1.0',
         'PyGithub>=2.0.0',
         'jinja2>=3.1.0',
+        'google-generativeai>=0.3.0',
     ],
     entry_points={
         'console_scripts': [

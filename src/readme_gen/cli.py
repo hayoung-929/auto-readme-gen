@@ -4,25 +4,50 @@ import os
 from pathlib import Path
 from .analyzer import analyze_project
 from .generator import generate_readme
-from .ai_helper import generate_readme_with_ai
 
 
-@click.group()
+def _maybe_hint_other_project(project_root: Path) -> None:
+    """이 도구 저장소만 분석 중이면, 다른 앱 경로를 넘기라는 안내."""
+    if project_root.resolve().name == "auto-readme-gen":
+        click.echo(
+            "💡 분석 대상이 auto-readme-gen 저장소입니다. "
+            "다른 프로젝트 README를 만들려면 그 폴더 경로를 첫 인자로 지정하세요.",
+            err=True,
+        )
+        click.echo("   예: readme-gen generate ../내-프로젝트", err=True)
+
+
+@click.group(context_settings={"help_option_names": ["-h", "--help"]})
 def cli():
     """Auto README Generator - 프로젝트를 분석해서 README를 자동 생성합니다."""
     pass
 
 
+@cli.command(name="help")
+@click.pass_context
+def help_command(ctx):
+    """사용법 표시 (readme-gen --help 와 동일)"""
+    click.echo(ctx.parent.get_help())
+
+
 @cli.command()
-@click.argument('project_path', default='.')
+@click.argument(
+    "project_path",
+    default=".",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+)
 def analyze(project_path):
     """
     프로젝트 분석만 수행 (README 생성 안 함)
-    
+
+    PROJECT_PATH: README를 만들 실제 앱/라이브러리 폴더 (기본: 현재 디렉터리)
+
     사용법: readme-gen analyze [프로젝트 경로]
     """
-    click.echo(f"프로젝트 분석 중: {project_path}")
-    
+    root = Path(project_path).resolve()
+    click.echo(f"프로젝트 분석 중: {root}")
+    _maybe_hint_other_project(root)
+
     project_info = analyze_project(project_path)
     
     click.echo("\n" + "=" * 50)
@@ -44,7 +69,11 @@ def analyze(project_path):
 
 
 @cli.command()
-@click.argument('project_path', default='.')
+@click.argument(
+    "project_path",
+    default=".",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+)
 @click.option('--output', '-o', default='README.md', help='출력 파일명 (기본: README.md)')
 @click.option('--lang', '-l', type=click.Choice(['korean', 'english']), default='korean', help='템플릿 언어 (기본: korean)')
 @click.option('--template', '-t', default=None, help='사용할 템플릿 파일 경로')
@@ -54,17 +83,22 @@ def analyze(project_path):
 def generate(project_path, output, lang, template, description, no_interactive, ai):
     """
     프로젝트를 분석해서 README 생성
-    
-    사용법: 
+
+    PROJECT_PATH: 분석·README 출력 대상이 될 실제 프로젝트 폴더 (기본: 현재 디렉터리)
+
+    사용법:
       readme-gen generate .                    # 대화형
+      readme-gen generate ../내-앱              # 다른 폴더 지정
       readme-gen generate . -d "설명"          # 설명 직접 입력
       readme-gen generate . --no-interactive   # 기본값 사용
       readme-gen generate . --ai               # AI 자동 생성
     """
     
     try:
-        click.echo(f"프로젝트 분석 중: {project_path}")
-        
+        root = Path(project_path).resolve()
+        click.echo(f"프로젝트 분석 중: {root}")
+        _maybe_hint_other_project(root)
+
         # 1. 프로젝트 분석
         project_info = analyze_project(project_path)
         
@@ -82,6 +116,9 @@ def generate(project_path, output, lang, template, description, no_interactive, 
         
         # 2. AI로 README 내용 생성 또는 수동 입력
         if ai:
+            # AI 전용 의존성은 이 시점에만 로드 (--help 등은 import 실패 없이 동작)
+            from .ai_helper import generate_readme_with_ai
+
             # AI로 자동 생성
             try:
                 click.echo("\n🤖 AI가 프로젝트를 분석하고 README를 생성하고 있습니다...")
